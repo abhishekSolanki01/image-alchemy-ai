@@ -1,0 +1,28 @@
+import mongoose, { Schema, Document, models, model } from 'mongoose';
+
+// create user schema which have clerkId, email, username, firstName, lastName, planId, creditBalance
+export interface IUser extends Document {
+  clerkId: string;
+  email: string;
+  username: string;
+  photo: string;
+  firstName?: string;
+  lastName?: string;
+  planId?: string;
+  creditBalance?: number;
+}
+
+const userSchema = new Schema({
+  clerkId: { type: String, required: true, unique: true},
+  email: { type: String, required: true, unique: true},
+  username: { type: String, required: true, unique: true},
+  photo: { type: String, required: true },
+  firstName: { type: String },
+  lastName: { type: String },
+  planId: { type: Number, default: 1 },
+  creditBalance: { type: Number, default: 10},
+});
+
+const User = models?.User || model('User', userSchema);
+
+export default User;

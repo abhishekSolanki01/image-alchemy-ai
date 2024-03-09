@@ -33,6 +33,7 @@ import { useState, useTransition } from "react";
 import { AspectRatioKey, debounce, deepMergeObjects } from "@/lib/utils";
 import { updateCredits } from "@/lib/actions/user.actions";
 import MediaUploader from "./MediaUploader";
+import TransformedImage from "./TransformedImage";
 
 export const formSchema = z.object({
   title: z.string(),
@@ -122,7 +123,7 @@ const TransformationForm = ({
     }, 1000);
   };
 
-  // TODO: return to update credits
+  // TODO: update credit fee to someting else
   const onTransformHandler = async () => {
     setIsTransforming(true);
     deepMergeObjects(newTransformation, transformationConfig);
@@ -130,7 +131,7 @@ const TransformationForm = ({
     setNewTransformation(null)
 
     startTransition(async() => {
-      // await updateCredits(userId, creditFee);
+      await updateCredits(userId, -1);
     })
   };
 
@@ -229,7 +230,7 @@ const TransformationForm = ({
             className="flex size-full flex-col"
             render={({field}) => (
               <MediaUploader
-                onVlaueChange={field.onChange}
+                onValueChange={field.onChange}
                 setImage={setImage}
                 publicId={field.value}
                 image={image}
@@ -238,6 +239,15 @@ const TransformationForm = ({
             
             )}
 
+          />
+
+          <TransformedImage
+            image={image}
+            type={type}
+            title={form.getValues().title}
+            isTransforming={isTransforming}
+            setIsTransforming={setIsTransforming}
+            transformationConfig={transformationConfig}
           />
         </div>
 

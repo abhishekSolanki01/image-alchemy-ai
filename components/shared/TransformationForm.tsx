@@ -34,6 +34,11 @@ import { AspectRatioKey, debounce, deepMergeObjects } from "@/lib/utils";
 import { updateCredits } from "@/lib/actions/user.actions";
 import MediaUploader from "./MediaUploader";
 import TransformedImage from "./TransformedImage";
+import { getCldImageUrl } from "next-cloudinary";
+import { UpdateImage, addImage } from "@/lib/actions/image.actions";
+import { useRouter } from "next/navigation";
+import { set } from "mongoose";
+
 
 export const formSchema = z.object({
   title: z.string(),
@@ -51,6 +56,8 @@ const TransformationForm = ({
   creditBalance,
   config = null,
 }: TransformationFormProps) => {
+  const router = useRouter();
+
   const transformationType = transformationTypes[type];
   const [image, setImage] = useState(data);
 
@@ -79,10 +86,71 @@ const TransformationForm = ({
   });
 
   // 2. Define a submit handler.
-  function onSubmit(values: z.infer<typeof formSchema>) {
-    // Do something with the form values.
-    // ✅ This will be type-safe and validated.
-    console.log(values);
+  async function onSubmit(values: z.infer<typeof formSchema>) {
+    setIsSubmitting(true);
+
+    if(data || image){
+      const transformationUrl = getCldImageUrl({
+        width : image?.width,
+        height: image?.height,
+        src: image?.publicId,
+        ...transformationConfig
+      })
+
+      const imageData = {
+        title: values.title,
+        publicId: image?.publicId,
+        transformationType: type,
+        width: image?.width,
+        height: image?.height,
+        config: transformationConfig,
+        secureURL: image.secureURL,
+        transformationURL: transformationUrl,
+        aspectRatio: values.aspectRatio,
+        prompt: values.prompt,
+        color: values.color,
+      }
+
+      if(action === "Add"){
+        try {
+          const newImage = await addImage({
+            image: imageData,
+            userId,
+            path: '/'
+          });
+
+          if(newImage){
+            form.reset();
+            setImage(data);
+            router.push(`/transformations/${newImage._id}`)
+          }
+
+        } catch (error) {
+          console.log(error);
+        }
+      }
+
+      if(action === "Update"){
+        try {
+          const updatedImage = await UpdateImage({
+            image: {
+              ...imageData,
+              _id: data._id,
+            },
+            userId,
+            path: `/transformations/${data._id}`
+          });
+
+          if(updatedImage){
+            router.push(`/transformations/${updatedImage._id}`)
+          }
+
+        } catch (error) {
+          console.log(error);
+        }
+      }
+    }
+    setIsSubmitting(false);
   }
 
   const onSlelectFieldHandler = (
@@ -126,7 +194,11 @@ const TransformationForm = ({
   // TODO: update credit fee to someting else
   const onTransformHandler = async () => {
     setIsTransforming(true);
-    deepMergeObjects(newTransformation, transformationConfig);
+
+    setTransformationConfig(
+      deepMergeObjects(newTransformation, 
+        transformationConfig)
+    )
 
     setNewTransformation(null)
 
